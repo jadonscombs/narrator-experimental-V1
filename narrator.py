@@ -6,10 +6,14 @@ import time
 import simpleaudio as sa
 import errno
 from elevenlabs import generate, play, set_api_key, voices
+from utils.initialize import fetch_auth_data, fetch_voice_id
 
-client = OpenAI()
 
-set_api_key(os.environ.get("ELEVENLABS_API_KEY"))
+#os.environ["PATH"] = os.environ.get("PATH") + "F:\\ffmpeg"
+
+client = OpenAI(api_key=fetch_auth_data("openai_auth"))
+
+set_api_key(fetch_auth_data("elevenlabs_auth"))
 
 def encode_image(image_path):
     while True:
@@ -25,7 +29,7 @@ def encode_image(image_path):
 
 
 def play_audio(text):
-    audio = generate(text, voice=os.environ.get("ELEVENLABS_VOICE_ID"))
+    audio = generate(text, voice=fetch_voice_id())
 
     unique_id = base64.urlsafe_b64encode(os.urandom(30)).decode("utf-8").rstrip("=")
     dir_path = os.path.join("narration", unique_id)
@@ -54,15 +58,28 @@ def generate_new_line(base64_image):
 
 
 def analyze_image(base64_image, script):
+    attenborough_system_message = (
+    """
+    You are Sir David Attenborough. Narrate the picture of the human as if it is a nature documentary.
+    Make it snarky and funny. Don't repeat yourself. Make it short. If I do anything remotely interesting, make a big deal about it!
+    """
+    )
+    
+    scottish_system_message = (
+    """
+    You are Scottish actor James McAvoy, but more senile, and way more cheeky, and witty with dry humour.
+    Narrate the picture of the human as if it is a satirical nature documentary.
+    Make it snarky and funny. Don't repeat yourself. Make it short.
+    If I do anything remotely interesting, make a big deal about it!
+    """
+    )
+
     response = client.chat.completions.create(
         model="gpt-4-vision-preview",
         messages=[
             {
                 "role": "system",
-                "content": """
-                You are Sir David Attenborough. Narrate the picture of the human as if it is a nature documentary.
-                Make it snarky and funny. Don't repeat yourself. Make it short. If I do anything remotely interesting, make a big deal about it!
-                """,
+                "content": scottish_system_message,
             },
         ]
         + script

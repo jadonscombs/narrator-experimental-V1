@@ -3,3 +3,5 @@
 /narration
 /frames/*
 !/frames/.gitkeep
+/utils/*
+!/utils/initialize.py
