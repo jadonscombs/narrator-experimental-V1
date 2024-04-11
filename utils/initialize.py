@@ -23,17 +23,10 @@ def fetch_auth_data(data_needed: str) -> str:
 
     # get actual authentication field name for the .ini file
     _auth_fieldname = _valid_auth[data_needed].lower()
-    print(f'auth_fieldname: {_auth_fieldname}')
 
     # read in initialization data
     config = configparser.ConfigParser()
     config.read("utils/api_config.ini")
-    
-    print(f'config sections: {config.sections()}')
-    print(f'config options in AUTH: {config.options("AUTH")}')
-    
-    truth = "AUTH" in config.sections()
-    print(f'truth is: {truth}')
 
     # if initialization file format is correct, proceed
     if (
@@ -58,9 +51,6 @@ def fetch_voice_id() -> str:
     # read in initialization data
     config = configparser.ConfigParser()
     config.read("utils/target_voice.ini")
-    
-    print(f'[voice] config sections: {config.sections()}')
-    print(f'[voice] config options in ELEVENLABS_VOICE: {config.options("ELEVENLABS_VOICE")}')
 
     # if initialization file format is correct, proceed
     if (

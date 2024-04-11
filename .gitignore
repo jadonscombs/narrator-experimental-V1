@@ -5,3 +5,5 @@
 !/frames/.gitkeep
 /utils/*
 !/utils/initialize.py
+mem_profile.log
+mprofile_20240408172941.dat
