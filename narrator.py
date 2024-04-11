@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import os
 import sys
 from os.path import join as ospath_join
@@ -69,8 +70,17 @@ async def encode_image(image_path):
 
 
 #def play_audio(text):
-async def play_audio(text):
-    audio = generate(text, voice=fetch_voice_id())
+async def play_audio(text, loop):
+    t0 = time.time()
+    audio = await loop.run_in_executor(
+        None,
+        functools.partial(
+            generate, text, voice=fetch_voice_id()
+        )
+    )
+    #audio = generate(text, voice=fetch_voice_id())
+    t1 = time.time()
+    print(f'[play_audio] generate audio took: {round(t1 - t0, 3)} sec.')
 
     unique_id = b64encode(urandom(30)).decode("utf-8").rstrip("=")
     dir_path = ospath_join("narration", unique_id)
@@ -80,7 +90,11 @@ async def play_audio(text):
     with open(file_path, "wb") as f:
         f.write(audio)
 
-    play(audio)
+    t0 = time.time()
+    await loop.run_in_executor(None, play, audio)
+    t1 = time.time()
+    print(f'[play_audio] play audio took: {round(t1 - t0, 3)} sec.')
+    #play(audio)
 
 
 def generate_new_line(base64_image):
@@ -122,7 +136,7 @@ def create_line(line: str):
     return [{"role": "assistant", "content": line}]
         
 # main looping component for narrator
-async def narrator_loop():
+async def narrator_loop(loop):
     script = []
     
     # temporary micro-optimizations -- dev work
@@ -147,12 +161,12 @@ async def narrator_loop():
         t1 = time.time()
         print(f'Image analysis time: {round(t1 - t0, 3)} sec.')
 
-        print(f"🎙️ David says:\n{analysis}")
+        print(f"🎙️ David says:\n{analysis}\n")
 
         print('About to play audio...')
         t0 = time.time()
         try:
-            await play_audio(analysis)
+            await play_audio(analysis, loop)
         except RateLimitError as e:
             print(f'{type(e).__name__}: {e}', file=sys.stderr)
         except Exception as e:
@@ -167,11 +181,11 @@ async def narrator_loop():
 
 
 #def main():
-async def main():
+async def main(loop):
     # we have the 'asyncio.ensure_future()' call again here,
     # so that the 'narrator_loop()' gets registered to run (again) in async
     print('Starting loop')
-    asyncio.ensure_future(narrator_loop())
+    asyncio.ensure_future(narrator_loop(loop))
     
     global main_looping_counter
     main_looping_counter += 1
@@ -185,7 +199,7 @@ if __name__ == "__main__":
     # we call 'asyncio.ensure_future()' first here, to register
     # the 'main()' function to be run in async
     loop = asyncio.get_event_loop()
-    asyncio.ensure_future(main())
+    asyncio.ensure_future(main(loop))
     
     # we run the loop indefinitely, which indefinitely runs
     # the 'main' function that calls the primary looping
